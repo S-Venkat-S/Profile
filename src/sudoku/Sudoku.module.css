@@ -1,0 +1,13 @@
+.grid {
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  font-size: 30px;
+}
+
+.grid[data-ques=true] {
+  color: red;
+}
+.bg1 {
+  background-color: rgb(210, 232, 253);
+}
