@@ -1,13 +1,29 @@
+.container {
+}
+
 .grid {
   width: 30px;
   height: 30px;
   text-align: center;
   font-size: 30px;
+  cursor: pointer;
+  border: solid 1px black;
+  border-collapse: collapse;
+  color: black;
+  color: transparent;
+  text-shadow: 0 0 0 #2196f3;
 }
 
 .grid[data-ques=true] {
-  color: red;
+  background-color: rgb(39, 123, 254);
+  color: white;
 }
+
+.grid[data-ques=false]:focus {
+  background-color: lightblue;
+  outline: none;
+}
+
 .bg1 {
   background-color: rgb(210, 232, 253);
 }

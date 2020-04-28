@@ -10,20 +10,33 @@ class Sudoku extends Component {
       data : [],
       ques : {}
     }
+    // For handling the input via keypad inputs
+    this.lastFocus = undefined
     this.handleGridInput = this.handleGridInput.bind(this);
+    this.handleKeypadInput = this.handleKeypadInput.bind(this);
     // this.randomizeInput = this.randomizeInput.bind(this);
     this.resetFrom = this.resetFrom.bind(this);
+    this.setFocus = this.setFocus.bind(this);
     this.solve = this.solve.bind(this);
-    this.randomizeInput(this.sampleInput)
+    this.start = this.start.bind(this);
+    this.start(9, 0)
   }
 
   // This is sample input for sudoku generator
   // Have to get the input from the below opensource api
   // http://www.cs.utep.edu/cheon/ws/sudoku/new/?size=9&level=1
-  sampleInput = [{"x":0,"y":3,"value":1},{"x":1,"y":0,"value":1},{"x":1,"y":7,"value":2},{"x":1,"y":8,"value":8},{"x":2,"y":1,"value":6},{"x":2,"y":3,"value":8},{"x":2,"y":6,"value":1},{"x":3,"y":2,"value":3},{"x":3,"y":5,"value":1},{"x":3,"y":6,"value":7},{"x":4,"y":4,"value":8},{"x":4,"y":5,"value":3},{"x":5,"y":2,"value":6},{"x":5,"y":6,"value":3},{"x":6,"y":2,"value":9},{"x":7,"y":0,"value":5},{"x":7,"y":1,"value":3},{"x":7,"y":8,"value":2},{"x":8,"y":3,"value":7},{"x":8,"y":7,"value":1}]
 
-  randomizeInput(apiResp) {
-    const tempState = {...this.state}
+  start(size, difficulty) {
+    let sampleInput = [{"x":0,"y":3,"value":1},{"x":1,"y":0,"value":1},{"x":1,"y":7,"value":2},{"x":1,"y":8,"value":8},{"x":2,"y":1,"value":6},{"x":2,"y":3,"value":8},{"x":2,"y":6,"value":1},{"x":3,"y":2,"value":3},{"x":3,"y":5,"value":1},{"x":3,"y":6,"value":7},{"x":4,"y":4,"value":8},{"x":4,"y":5,"value":3},{"x":5,"y":2,"value":6},{"x":5,"y":6,"value":3},{"x":6,"y":2,"value":9},{"x":7,"y":0,"value":5},{"x":7,"y":1,"value":3},{"x":7,"y":8,"value":2},{"x":8,"y":3,"value":7},{"x":8,"y":7,"value":1}]
+    this.setupPuzzle(sampleInput)
+  }
+
+  setupPuzzle(apiResp) {
+    const tempState = {
+      gridSize: 9,
+      data : [],
+      ques : {}
+    }
     apiResp.forEach((item, i) => {
       const index = (item.x * this.state.gridSize) + item.y
       const value = item.value
@@ -33,12 +46,36 @@ class Sudoku extends Component {
       tempState.ques[index] = true
     });
     this.setState(tempState)
+    setTimeout(function () {
+      this.setState(tempState)
+    }.bind(this), 1000)
   }
 
-  handleGridInput(inp) {
+  // For handling the input by directly pressing the respective numbers
+  handleGridInput(inp, eve) {
     const id = inp.target.dataset.id
     const value = this.validateNum(inp.target.value)
-    console.log(this)
+    console.log(inp, eve)
+    this.updateValue(id, value)
+  }
+
+  // Setting the focus cell id.
+  setFocus(inp) {
+    this.lastFocus = inp.target.dataset.id
+    return
+  }
+
+  // For handling the keypad press input
+  handleKeypadInput(inp) {
+    const value = this.validateNum(inp.target.value)
+    if (this.lastFocus) {
+        this.updateValue(this.lastFocus, value)
+    }
+    this.lastFocus = null
+  }
+
+  // Only method to update values in the data
+  updateValue(id, value) {
     const tempState = {...this.state}
     tempState.data[id] = value
     this.setState(tempState)
@@ -52,35 +89,6 @@ class Sudoku extends Component {
       return parseInt(inp)
     }
     return ""
-  }
-
-  getGrid(state) {
-    let grid = []
-    for (let i=0; i<state.gridSize; i++) {
-      for (let j=0; j<state.gridSize; j++) {
-        const curIndex = (i*state.gridSize) + j
-        let isQues = false
-        if (state.ques[curIndex]) {
-          isQues = true
-        }
-        let value = this.state.data[curIndex]
-        if (value === undefined) {
-          value = ""
-        }
-        grid.push(<input
-          value={value}
-          onInput={this.handleGridInput}
-          data-id={curIndex}
-          data-ques={isQues}
-          key={curIndex}
-          maxLength={1}
-          className={styles.grid}
-          placeholder={curIndex}
-          type="text" />)
-      }
-      grid.push(<br></br>)
-    }
-    return grid
   }
 
   solve() {
@@ -120,7 +128,7 @@ class Sudoku extends Component {
           }
         }
         // All the numbers cant be placed and the loop is going backward
-        if (prevDir == -1) {
+        if (prevDir === -1) {
           data[index] = 0
           index = index - 1
           prevDir = -1
@@ -177,7 +185,7 @@ class Sudoku extends Component {
   }
 
   isFilled(data) {
-    return (data.indexOf(0) == -1 || data.indexOf(undefined) == -1)
+    return (data.indexOf(0) === -1 || data.indexOf(undefined) === -1)
   }
 
   // Will return the values in the row based on the index
@@ -250,14 +258,73 @@ class Sudoku extends Component {
     return subGridData.concat(this.getRow(data, index, subGridSize))
   }
 
+  getGrid(state) {
+    let grid = []
+    for (let i=0; i<state.gridSize; i++) {
+      for (let j=0; j<state.gridSize; j++) {
+        const curIndex = (i*state.gridSize) + j
+        let isQues = false
+        if (state.ques[curIndex]) {
+          isQues = true
+        }
+        let value = this.state.data[curIndex]
+        if (value === undefined) {
+          value = ""
+        }
+        grid.push(<input
+          value={value}
+          onInput={this.handleGridInput}
+          onFocus={this.setFocus}
+          data-id={curIndex}
+          data-ques={isQues}
+          disabled={isQues}
+          key={curIndex}
+          maxLength={1}
+          className={styles.grid}
+          // placeholder={curIndex}
+          type="text" />)
+      }
+      grid.push(<br></br>)
+    }
+    return grid
+  }
+
+  getKeyPad() {
+    let keyPad = []
+    let list = [1,2,3,4,5,6,7,8,9,"*","C","#"]
+    for ( let i=0; i<list.length; i++) {
+      keyPad.push(<input type="button" value={list[i]} onClick={this.handleKeypadInput}/>)
+      if ((i+1) % 3 === 0) {
+        keyPad.push(<br></br>)
+      }
+    }
+    return keyPad
+  }
+
   render() {
     return (
       <div>
         <div>
-          <label>Grid Size: <input type="number" /></label>
+          <label>Size:</label>
+            <select type="number">
+              <option value="6">6</option>
+              <option value="9">9</option>
+            </select>
+          <label>Difficulty :</label>
+            <select type="number">
+              <option value="0">Easy</option>
+              <option value="1">Medium</option>
+              <option value="2">Hard</option>
+            </select>
+            <input type="button" value="New Game" onClick={this.start} />
         </div>
-        <div>
-          {this.getGrid(this.state)}
+        <div className={styles.container}>
+          <div>
+            {this.getGrid(this.state)}
+          </div>
+          <div>
+            {this.getKeyPad()}
+          </div>
         </div>
         <div>
           <input type="button" value="Solve" onClick={this.solve} />
