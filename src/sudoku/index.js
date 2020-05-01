@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import styles from "./Sudoku.module.css"
+import Uarray from "../Utils/Uarray";
 
 class Sudoku extends Component {
 
@@ -8,54 +9,128 @@ class Sudoku extends Component {
     this.state = {
       gridSize: 9,
       data : [],
-      ques : {}
+      ques : {},
+      error: {}
     }
+
+    //This is for references for respective grid, column and row
+    this.references = {
+      "rows" : [],
+      "columns" : [],
+      "grids" : [],
+      "cell_index" : {},
+    }
+
+    this.difficulties = {
+      0 : "easy",
+      1 : "medium",
+      2 : "hard",
+      3 : "random"
+    }
+
+    this.difficulty = 0
+
     // For handling the input via keypad inputs
     this.lastFocus = undefined
     this.handleGridInput = this.handleGridInput.bind(this);
     this.handleKeypadInput = this.handleKeypadInput.bind(this);
-    // this.randomizeInput = this.randomizeInput.bind(this);
-    this.resetFrom = this.resetFrom.bind(this);
     this.setFocus = this.setFocus.bind(this);
     this.solve = this.solve.bind(this);
     this.start = this.start.bind(this);
+    this.setDifficulty = this.setDifficulty.bind(this)
+    this.startNewGame = this.startNewGame.bind(this)
+    this.setupReference(this.state.gridSize)
+    // this.setState({...this.state})
+  }
+
+  componentDidMount() {
     this.start(9, 0)
   }
 
-  // This is sample input for sudoku generator
-  // Have to get the input from the below opensource api
-  // http://www.cs.utep.edu/cheon/ws/sudoku/new/?size=9&level=1
-
-  start(size, difficulty) {
-    let sampleInput = [{"x":0,"y":3,"value":1},{"x":1,"y":0,"value":1},{"x":1,"y":7,"value":2},{"x":1,"y":8,"value":8},{"x":2,"y":1,"value":6},{"x":2,"y":3,"value":8},{"x":2,"y":6,"value":1},{"x":3,"y":2,"value":3},{"x":3,"y":5,"value":1},{"x":3,"y":6,"value":7},{"x":4,"y":4,"value":8},{"x":4,"y":5,"value":3},{"x":5,"y":2,"value":6},{"x":5,"y":6,"value":3},{"x":6,"y":2,"value":9},{"x":7,"y":0,"value":5},{"x":7,"y":1,"value":3},{"x":7,"y":8,"value":2},{"x":8,"y":3,"value":7},{"x":8,"y":7,"value":1}]
-    this.setupPuzzle(sampleInput)
+  // Updates the difficulty of the game
+  setDifficulty(inp) {
+    this.difficulty = inp.target.value
   }
 
-  setupPuzzle(apiResp) {
-    const tempState = {
-      gridSize: 9,
-      data : [],
-      ques : {}
-    }
-    apiResp.forEach((item, i) => {
-      const index = (item.x * this.state.gridSize) + item.y
-      const value = item.value
-      tempState.data[index] = value
+  // Starts the new game
+  startNewGame() {
+    this.start(9, this.difficulty)
+    this.setupReference(this.state.gridSize)
+  }
 
+  // Setting up the references for easy access of values.
+  // This is much helpful for designing by css.
+  setupReference(gridSize) {
+    let allRows = []
+    let allColumns = []
+    let allGrids = []
+    // Using an temporary for searching already placed rows inside allrows
+    // indeOf for array inside an array doesn't work because of instance
+    let allRowsStr = []
+    let allColumnsStr = []
+    let allGridsStr = []
+    for (let i=0; i<gridSize*gridSize; i++) {
+      let row = Uarray.sortAsc(this.getRowIndexes(i, gridSize))
+      let column = Uarray.sortAsc(this.getColumnIndexes(i, gridSize))
+      let grid = Uarray.sortAsc(this.getSubgridIndexes(i, gridSize))
+      if (allRowsStr.indexOf(row.join(",")) === -1) {
+          allRowsStr.push(row.join(","))
+          allRows.push(row)
+      }
+      if (allColumnsStr.indexOf(column.join(",")) === -1) {
+          allColumnsStr.push(column.join(","))
+          allColumns.push(column)
+      }
+      if (allGridsStr.indexOf(grid.join(",")) === -1) {
+          allGridsStr.push(grid.join(","))
+          allGrids.push(grid)
+      }
+      this.references.cell_index[i] = {}
+      this.references.cell_index[i]["row"] = allRowsStr.indexOf(row.join(","))
+      this.references.cell_index[i]["column"] = allColumnsStr.indexOf(column.join(","))
+      this.references.cell_index[i]["grid"] = allGridsStr.indexOf(grid.join(","))
+    }
+    this.references.rows = allRows
+    this.references.columns = allColumns
+    this.references.grids = allGrids
+  }
+
+  // Getting the questioner from the below api
+  // Full credits to the api developer
+  // https://sugoku2.herokuapp.com/board?difficulty=easy
+  start(size, difficulty) {
+    fetch("https://sugoku2.herokuapp.com/board?difficulty="+this.difficulties[difficulty]).then(function (resp) {
+      resp.json().then(function (res) {
+        let board = []
+        // res.board = [[0,0,0,0,0,0,4,0,0],[0,0,0,0,0,0,0,8,0],[0,5,0,0,7,0,0,0,0],[0,1,0,3,0,0,8,9,7],[3,0,5,0,0,0,0,2,0],[0,9,0,7,2,0,3,1,0],[0,3,0,0,0,0,0,0,0],[6,0,0,0,0,1,0,4,0],[0,4,0,5,8,0,1,6,3]]
+        res.board.forEach(function (i) {
+          board = board.concat(i)
+        })
+        this.setState(this.setupPuzzle(board))
+      }.bind(this))
+    }.bind(this))
+  }
+
+  // Parsing the data from the api response
+  setupPuzzle(apiResp) {
+    let tempState = {...this.state}
+    tempState.data = []
+    tempState.ques = []
+    apiResp.forEach((item, index) => {
       // Json data, to reduce indexing
-      tempState.ques[index] = true
+      if (item) {
+        tempState.data[index] = item
+        tempState.ques[index] = true
+      }
     });
-    this.setState(tempState)
-    setTimeout(function () {
-      this.setState(tempState)
-    }.bind(this), 1000)
+    return tempState;
   }
 
   // For handling the input by directly pressing the respective numbers
   handleGridInput(inp, eve) {
     const id = inp.target.dataset.id
-    const value = this.validateNum(inp.target.value)
-    console.log(inp, eve)
+    const value = this.validateNum(inp.target.value[inp.target.value.length-1])
+    console.log(value)
     this.updateValue(id, value)
   }
 
@@ -74,18 +149,22 @@ class Sudoku extends Component {
     this.lastFocus = null
   }
 
-  // Only method to update values in the data
+  // Method to update values in the data from the user input
   updateValue(id, value) {
     const tempState = {...this.state}
+    let npValues = this.getNotPossibleValues(tempState.data, id, tempState.gridSize)
+    tempState.error[id] = false
     tempState.data[id] = value
+    if (npValues.indexOf(parseInt(value)) !== -1) {
+      tempState.error[id] = true
+    }
     this.setState(tempState)
   }
 
   // Have to validate the input for grid cell.
   validateNum(inp) {
     let intInp = parseInt(inp)
-    // TODO: limit the max value based on the grid size
-    if (!isNaN(intInp) && intInp > 0 && intInp < 10) {
+    if (!isNaN(intInp) && intInp > 0 && intInp < (this.state.gridSize+1)) {
       return parseInt(inp)
     }
     return ""
@@ -96,16 +175,12 @@ class Sudoku extends Component {
     let ques = this.state.ques
     let gridSize = this.state.gridSize
     let index = 0
+    // Erasing the already filled up cells and starting to solve from scratch
+    data = this.resetData(data, ques)
     // Will decide in which direction the loop will proceed
     let prevDir = 1
-    // console.log(this.getNotPossibleValues(data, 6, gridSize))
-    // return
-    // TODO: Have to add better check
     let st = Date.now()
-    // let a = ""
-    while (this.isFilled(data) && index < 81) {
-      // TODO: Reformat the if section, better method.
-      // a += index+","
+    while (index < (gridSize*gridSize)) {
       if (this.isQues(index, ques)) {
         index = index + prevDir
         continue
@@ -119,6 +194,10 @@ class Sudoku extends Component {
         // Default setting as -1, if the value placed it will become +1 and the loop moves forward
         prevDir = -1
         let notPossibleValues = this.getNotPossibleValues(data, index, gridSize)
+        // Skipping the loop if length of the notPossibleValues == gridSize
+        if (notPossibleValues.length === gridSize) {
+          cachedValue = gridSize+1
+        }
         for (let i=cachedValue; i<gridSize+1; i++) {
           if (notPossibleValues.indexOf(i) === -1) {
             data[index] = i
@@ -127,7 +206,7 @@ class Sudoku extends Component {
             break
           }
         }
-        // All the numbers cant be placed and the loop is going backward
+        // All the numbers can't be placed and the loop is going backward
         if (prevDir === -1) {
           data[index] = 0
           index = index - 1
@@ -136,18 +215,18 @@ class Sudoku extends Component {
       }
     }
     console.log(Date.now() - st)
-    // console.log(a)
     let final= {...this.state}
     final.data = data
     this.setState(final.data)
   }
 
-  resetFrom(data, from) {
-    for (let i=from; i<data.length; i++) {
-      if (!this.isQues(i, this.state.ques)) {
+  resetData(data, ques) {
+    for (let i=0; i<data.length; i++) {
+      if (!this.isQues(i, ques)) {
         data[i] = 0
       }
     }
+    return data
   }
 
   // Checks whether the cell(index) is prefilled or not
@@ -161,46 +240,27 @@ class Sudoku extends Component {
 
   // Gets the values of the concurrent row, column and grid
   getNotPossibleValues(data, index, gridSize) {
-    let rowData = this.getRow(data, index, gridSize)
-    let columnData = this.getColumn(data, index, gridSize)
-    let subgridData = this.getSubgrid(data, index, gridSize)
+    let rowData = Uarray.getValuesByIndexes(data, this.getRowIndexes(index, gridSize))
+    let columnData = Uarray.getValuesByIndexes(data, this.getColumnIndexes(index, gridSize))
+    let subgridData = Uarray.getValuesByIndexes(data, this.getSubgridIndexes(index, gridSize))
     let allData = rowData.concat(columnData.concat(subgridData))
-    // console.log(subgridData)
-    return allData.filter(function (i){if (i){return i}})
+    allData = allData.filter(function (i){if (i){return true}return false})
+    return Uarray.removeDuplicates(allData);
   }
 
-  // returns the empty (0, undefined) index in the data array.
-  // from is optional argument to reduce loop count
-  // return -1 if no empty value is found
-  getNextEmptyIndex(data, from) {
-    if (!from) {
-      from = 0
-    }
-    for (let i=from; i<data.length; i++) {
-      if (!data[i]) {
-        return i
-      }
-    }
-    return -1
-  }
-
-  isFilled(data) {
-    return (data.indexOf(0) === -1 || data.indexOf(undefined) === -1)
-  }
-
-  // Will return the values in the row based on the index
-  getRow(data, index, gridSize) {
+  // Will return the indexes of the corresponding row for the given index
+  getRowIndexes(index, gridSize) {
     const rowData = []
     // Generating after Data
     for (let i=index+1; i < index+gridSize; i++) {
       if (i % gridSize === 0) {
         break
       }
-      rowData.push(data[i])
+      rowData.push(i)
     }
     // Generating current and before Data
     for (let i=index; i > index-gridSize; i--) {
-      rowData.push(data[i])
+      rowData.push(i)
       if (i % gridSize === 0) {
         break
       }
@@ -208,55 +268,48 @@ class Sudoku extends Component {
     return rowData
   }
 
-  // Will return the values in the column based on the index
-  getColumn(data, index, gridSize) {
-    const columnData = []
+  // Will return the indexes of the corresponding column for the given index
+  getColumnIndexes(index, gridSize) {
+    const columnData = [index]
     // Generating after Data
     for (let i=index+gridSize; i < gridSize*gridSize; i+=gridSize) {
-      columnData.push(data[i])
+      columnData.push(i)
     }
     // Generating before Data
     for (let i=index-gridSize; i > -1; i-=gridSize) {
-      columnData.push(data[i])
+      columnData.push(i)
     }
     return columnData
   }
 
-  // Will return the values in the Subgrid based on the index
+  // Will return the indexes of the corresponding row for the given index
   // A subgrid is 3x3 grid in a 9x9 sudoku
-  getSubgrid(data, index, gridSize) {
+  getSubgridIndexes(index, gridSize) {
     const subGridSize = Math.sqrt(gridSize)
-    let subGridData = []
-    const subGridIndexes = []
+    let subGridIndexes = []
     // Spliting the entire sudoku grid into subgrid columns
     let subGridIndex = 0
-    // To find in which column the current index is present
-    let c = 0
     // Splitting the entire column in sub grid Size
     // e.g. 9x9; 27, 54, 81
-    // Find where the index is placed in the above numbers
+    // Find where the index is placed in between the above numbers
     // After this we can get row for each index
     for (let i=0; i<gridSize*gridSize; i+=gridSize*subGridSize) {
       if (index < i+gridSize*subGridSize && index >= i ) {
-        subGridIndex = c
+        subGridIndex = i  / (gridSize*subGridSize)
+        break
       }
-      c++;
     }
-    // console.log(subGridIndex)
-    // console.log(this.getRow(data, 24, subGridSize), "ROW")
-    for (let i=index+gridSize; i < (subGridIndex+1)*subGridSize*gridSize; i+=gridSize) {
-      subGridIndexes.push(i)
-      subGridData.push(data[i])
-    }
-    for (let i=index-gridSize; i > subGridIndex*subGridSize*gridSize; i-=gridSize) {
-      subGridIndexes.push(i)
-      subGridData.push(data[i])
-    }
-    subGridIndexes.forEach((item, i) => {
-      subGridData = subGridData.concat(this.getRow(data, item, subGridSize))
+    // Getting the full gridSize corresponding column (not subgridsize)
+    // Sorting the column array splicing it based on the subGridIndex
+    let columnIndexes = Uarray.sortAsc(this.getColumnIndexes(index, gridSize)).splice(subGridIndex*subGridSize, subGridSize)
+    columnIndexes.forEach((item) => {
+      subGridIndexes = subGridIndexes.concat(this.getRowIndexes(item, subGridSize))
     });
-    return subGridData.concat(this.getRow(data, index, subGridSize))
+    subGridIndexes = subGridIndexes.concat(this.getRowIndexes(index, subGridSize))
+    return Uarray.removeDuplicates(subGridIndexes)
   }
+
+  // Remove duplicates
 
   getGrid(state) {
     let grid = []
@@ -277,9 +330,12 @@ class Sudoku extends Component {
           onFocus={this.setFocus}
           data-id={curIndex}
           data-ques={isQues}
+          data-error={state.error[curIndex]}
+          data-row={this.references.cell_index[curIndex]["row"]}
+          data-column={this.references.cell_index[curIndex]["column"]}
+          data-grid={this.references.cell_index[curIndex]["grid"]}
           disabled={isQues}
           key={curIndex}
-          maxLength={1}
           className={styles.grid}
           // placeholder={curIndex}
           type="text" />)
@@ -291,43 +347,45 @@ class Sudoku extends Component {
 
   getKeyPad() {
     let keyPad = []
-    let list = [1,2,3,4,5,6,7,8,9,"*","C","#"]
+    let list = [1,2,3,4,5,6,7,8,9,0]
     for ( let i=0; i<list.length; i++) {
-      keyPad.push(<input type="button" value={list[i]} onClick={this.handleKeypadInput}/>)
-      if ((i+1) % 3 === 0) {
-        keyPad.push(<br></br>)
-      }
+      keyPad.push(<input
+        type="button"
+        value={list[i]}
+        className={styles.keypad + ' ' + styles.grid}
+        onClick={this.handleKeypadInput}/>)
     }
     return keyPad
   }
 
   render() {
     return (
-      <div>
-        <div>
-          <label>Size:</label>
-            <select type="number">
-              <option value="6">6</option>
-              <option value="9">9</option>
-            </select>
-          <label>Difficulty :</label>
-            <select type="number">
+      <div className={styles.container}>
+        <div className={styles.settingcontainer}>
+          <div className={styles.diffcontainer}>
+            <label> Difficulty : </label>
+            <select type="number" onChange={this.setDifficulty}>
               <option value="0">Easy</option>
               <option value="1">Medium</option>
               <option value="2">Hard</option>
+              <option value="3">Random</option>
             </select>
-            <input type="button" value="New Game" onClick={this.start} />
-        </div>
-        <div className={styles.container}>
-          <div>
-            {this.getGrid(this.state)}
           </div>
-          <div>
-            {this.getKeyPad()}
-          </div>
+          <input className={styles.solve + ' ' + styles.newgame} type="button" value="New Game" onClick={this.startNewGame} />
+          <hr></hr>
         </div>
         <div>
-          <input type="button" value="Solve" onClick={this.solve} />
+          <div className={styles.gridcontainer}>
+            {this.getGrid(this.state)}
+          </div>
+        </div>
+        <div className={styles.keypadcontainer}>
+          <div>
+            <hr></hr>
+            {this.getKeyPad()}
+          </div>
+          <br></br>
+          <input className={styles.solve} type="button" value="SOLVE" onClick={this.solve} />
         </div>
       </div>
     )
