@@ -1,0 +1,25 @@
+.container {
+
+}
+
+.board {
+  height: 25%;
+  width: 50%;
+  margin: 0 auto;
+}
+
+.indexes {
+  font-size: 5px;
+}
+
+.cell {
+
+}
+
+.cell[data-color="0"] {
+  fill: #d18b47;
+}
+
+.cell[data-color="1"] {
+  fill: #ffce9e;
+}
