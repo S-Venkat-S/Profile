@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import Sudoku from "./sudoku/index.js"
 import Knightstour from "./knightstour/index.js"
+import Slide from "./slide/index.js"
 import * as serviceWorker from './serviceWorker';
 
 const path = window.location.pathname
@@ -13,6 +14,9 @@ if (path === "/sudoku") {
 }
 else if(path === "/Knightstour") {
   Page = Knightstour
+}
+else if(path === "/Slide") {
+  Page = Slide
 }
 else {
   Page = App
