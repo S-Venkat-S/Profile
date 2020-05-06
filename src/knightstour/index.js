@@ -13,11 +13,12 @@ class Knightstour extends Component {
     this.boardheight = 90
     this.cellwidth = this.boardWidth / 9
     this.cellheight = this.boardheight / 9
-    this.boardSize = 7
+    this.boardSize = 6
     this.possibleMovesCache = {}
     this.state = {
       boardSize: this.boardSize,
-      solution: []
+      solution: [],
+      isSolving: false
     }
   }
 
@@ -41,15 +42,21 @@ class Knightstour extends Component {
 
   startTour(inp) {
     // console.log(inp.target.dataset.reference)
+    if (this.state.isSolving) {
+      alert("Generating solution")
+      return;
+    }
     let start = [inp.target.dataset.reference]
+    this.setState({ isSolving: true });
     let alreadyPlacedData = {}
     alreadyPlacedData[start] = true
     let st = Date.now()
     let solution = this.solveRec(start, alreadyPlacedData)
     // let solution = this.solve(start, alreadyPlacedData)
-    console.log(Date.now() - st)
+    console.log(Date.now() - st, solution)
     let tempState = this.state
     tempState.solution = solution
+    tempState.isSolving = false
     this.setState({...tempState})
     // console.log(this.getPossibleMoves("C2", this.boardSize))
   }
@@ -69,6 +76,10 @@ class Knightstour extends Component {
         solution = this.solveRec(solution, alreadyPlacedData)
         if (solution.length === this.boardSize * this.boardSize) {
           return solution;
+        }
+        else if (solution.length <= 0) {
+          // There no valid knights tour available.
+          return []
         }
         let removedMove = solution.pop()
         alreadyPlacedData[removedMove] = false
@@ -226,7 +237,7 @@ class Knightstour extends Component {
     return (
       <div className={styles.container}>
         <div className={styles.board}>
-          <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
             <g>
               {this.renderIndexes(this.state.boardSize)}
             </g>
@@ -241,6 +252,11 @@ class Knightstour extends Component {
                 />
             </g>
           </svg>
+        </div>
+        <div className={styles.bottomText}>
+          <p>Click a cell to draw the path of Knights tour from the selected cell.</p>
+          <p>Quick solution are A6, A1, C3</p>
+          <p>Solution is {this.state.solution.join(", ")}</p>
         </div>
       </div>
     )

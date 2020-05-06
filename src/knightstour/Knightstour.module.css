@@ -13,7 +13,7 @@
 }
 
 .cell {
-
+  cursor: pointer;
 }
 
 .cell[data-color="0"] {
@@ -22,4 +22,9 @@
 
 .cell[data-color="1"] {
   fill: #ffce9e;
+}
+
+.bottomText {
+  margin: 0 auto;
+  width: 50%;
 }
