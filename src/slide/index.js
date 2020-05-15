@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Utils from "../Utils/Uarray.js"
 import styles from "./Slide.module.css"
 
 class Slide extends Component {
@@ -19,7 +20,7 @@ class Slide extends Component {
   // Trying to use init method for resetting the game
   init(buttonClick) {
     let state = {
-      inp: [0,7,2,1,8,5,4,3,6],
+      inp: [7,2,1,8,5,4,3,6,0],
       width: 3,
       height: 3,
       gridSeq: ""
@@ -35,7 +36,7 @@ class Slide extends Component {
     this.width = state.width
     this.height = state.height
     this.cache = {}
-    this.temp = 0
+    this.emptyCell = React.createRef()
     // not a best way to implement :(
     if (buttonClick) {
       this.setState(state)
@@ -61,10 +62,40 @@ class Slide extends Component {
     })
   }
 
+  // Returns the inversion for the current arr
+  checkInversions(arr) {
+    if (arr.length == 0) {
+      return false
+    }
+    let inversions = 0
+    for (let i=0; i<arr.length; i++) {
+      let curVal = arr[i]
+      let beforeArr = arr.
+      for (let j=0; j<)
+    }
+  }
+
   // TODO: Have to add real generate method based on
   // https://www.cs.bham.ac.uk/~mdr/teaching/modules04/java2/TilesSolvability.html
   generateSeq(width, height) {
-    return [3, 2, 6, 4, 7, 8, 13, 14, 11, 12, 9, 10, 1, 15, 5, 0]
+    let mainArr = []
+    for (let i=1; i<width*height; i++) {
+      mainArr.push(i)
+    }
+    let seqArr = []
+    while (!checkInversions(seqArr)) {
+      while (seqArr.length !== (width*height)-1) {
+        let randInt = this.getRandInt(mainArr.length)
+        seqArr.push(mainArr[randInt])
+        // Removing the empty arr
+        mainArr = mainArr.splice(randInt, 1)
+      }
+    }
+  }
+
+  //get random number from 0 to end
+  getRandInt(max) {
+    return parseInt(Math.random()*max)
   }
 
   // Solving the slide puzzle using BFS recurssion:)
@@ -84,13 +115,32 @@ class Slide extends Component {
         }
         this.cache[nxt.join()] = true
         nxtSeq.push(nxt)
+        this.temp[nxt.join()] = curSt.join()
         if (nxt.join() === res) {
-          console.log(nxt);
-          alert("SOLVED")
+          window.tmp = this.temp
+          return this.getPath(this.temp, this.state.inp)
         }
       }
     }
     return this.solve(nxtSeq)
+  }
+
+  // Trace the path of the slide
+  getPath(pathMap, start) {
+    let solvedPath = []
+    solvedPath.push("1,2,3,4,5,6,7,8,0")
+    while(solvedPath[solvedPath.length-1] !== start.join()) {
+      let nxt = solvedPath[solvedPath.length-1]
+      solvedPath.push(pathMap[nxt])
+    }
+    console.log(this.getPathIndex(solvedPath))
+    return this.getPathIndex(solvedPath);
+  }
+
+  getPathIndex(solvedPath) {
+    return solvedPath.map((i) => {
+      return i.split(",").indexOf("0")
+    })
   }
 
   // Swaps the value in the index to the zero placed index
@@ -134,14 +184,8 @@ class Slide extends Component {
     if (cellDiff !== 1 && cellDiff !== -1) {
       return
     }
-    let prevX = parseInt(inp.target.style["left"])
-    let prevY = parseInt(inp.target.style["top"])
-    if (!prevX) {
-      prevX = 0
-    }
-    if (!prevY) {
-      prevY = 0
-    }
+    let prevX = !parseInt(inp.target.style["left"]) ? 0 : parseInt(inp.target.style["left"])
+    let prevY = !parseInt(inp.target.style["top"]) ? 0 : parseInt(inp.target.style["top"])
     inp.target.style["left"] = prevX + ((gridEmpX - gridInpX) * 100)+"px";
     inp.target.style["top"] = prevY + ((gridEmpY - gridInpY) * 100)+"px";
     let tempState = {...this.state}
@@ -155,7 +199,11 @@ class Slide extends Component {
     for (let x=0; x<width; x++) {
       for (let y=0; y<height; y++) {
         let index = (x*width)+y
-        buttons.push(<button id={this.input[index]} className={styles.button} onClick={this.slide}>{this.input[index]}</button>)
+        buttons.push(<button
+          id={this.input[index]}
+          className={styles.button}
+          ref={this.input[index] == 0 ? this.emptyCell : null}
+          onClick={this.slide}>{this.input[index]}</button>)
       }
       buttons.push(<br></br>)
     }
@@ -210,7 +258,7 @@ class Slide extends Component {
         <div className={styles.buttonContainer}>
           {this.renderGrids(this.width, this.height, this.state)}
         </div>
-        <input type="button" value="Solve" onClick = {() => this.solve([this.state.inp])} />
+        <input type="button" value="Solve" onClick = {() => console.log(this.solve([this.state.inp]))} />
       </div>
     )
   }
