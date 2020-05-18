@@ -16,8 +16,21 @@
   left: 0px;
   top: 0px;
 }
+.button::after {
+  content: attr(id);
+  position: absolute;
+  left: 90%;
+  bottom: 85%;
+  font-size: 12px;
+}
 .buttonContainer {
   position: initial;
+  margin: 0 auto;
+}
+
+.solveButton {
+  width: 300px;
+  height: 40px;
   margin: 0 auto;
 }
 

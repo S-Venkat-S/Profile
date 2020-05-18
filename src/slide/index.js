@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import Utils from "../Utils/Uarray.js"
 import styles from "./Slide.module.css"
 
 class Slide extends Component {
@@ -8,11 +7,14 @@ class Slide extends Component {
     super(props);
     this.init = this.init.bind(this)
     this.slide = this.slide.bind(this)
-    this.changeWidth = this.changeWidth.bind(this)
-    this.changeHeight = this.changeHeight.bind(this)
+    // this.changeWidth = this.changeWidth.bind(this)
+    // this.changeHeight = this.changeHeight.bind(this)
     this.updateSeq = this.updateSeq.bind(this)
     this.renderGrids = this.renderGrids.bind(this)
     this.solve = this.solve.bind(this)
+    // Using this for tracing the path for the solution
+    this.temp = []
+    this.res = "1,2,3,4,5,6,7,8,0"
     let state = this.init(false)
     this.state = state
   }
@@ -23,7 +25,8 @@ class Slide extends Component {
       inp: [7,2,1,8,5,4,3,6,0],
       width: 3,
       height: 3,
-      gridSeq: ""
+      gridSeq: "",
+      solution: ""
     }
     if (buttonClick) {
       state.width = parseInt(this.state.width)
@@ -64,33 +67,52 @@ class Slide extends Component {
 
   // Returns the inversion for the current arr
   checkInversions(arr) {
-    if (arr.length == 0) {
+    if (arr.length === 0) {
       return false
     }
     let inversions = 0
     for (let i=0; i<arr.length; i++) {
       let curVal = arr[i]
-      let beforeArr = arr.
-      for (let j=0; j<)
+      let beforeArr = arr.slice(0, i)
+      let invStart = curVal-1;
+      for (let j=0; j<beforeArr.length; j++) {
+        if (beforeArr[j] < curVal) {
+          invStart = invStart - 1
+        }
+      }
+      inversions = inversions + invStart
     }
+    console.log(inversions)
+    if (inversions % 2 === 0) {
+      return true;
+    }
+    return false
   }
 
   // TODO: Have to add real generate method based on
   // https://www.cs.bham.ac.uk/~mdr/teaching/modules04/java2/TilesSolvability.html
   generateSeq(width, height) {
-    let mainArr = []
+    let actualArr = []
     for (let i=1; i<width*height; i++) {
-      mainArr.push(i)
+      actualArr.push(i)
     }
     let seqArr = []
-    while (!checkInversions(seqArr)) {
+    while (!this.checkInversions(seqArr)) {
+      // Reinitializing the seqarr and mainarr for every loop
+      seqArr = []
+      let mainArr = actualArr.concat([])
       while (seqArr.length !== (width*height)-1) {
         let randInt = this.getRandInt(mainArr.length)
         seqArr.push(mainArr[randInt])
-        // Removing the empty arr
-        mainArr = mainArr.splice(randInt, 1)
+        console.log(seqArr, randInt, mainArr)
+        // Removing the already placed value in the array
+        let beforeArr = mainArr.splice(randInt+1)
+        mainArr.pop()
+        mainArr = mainArr.concat(beforeArr)
       }
     }
+    seqArr.push(0)
+    return seqArr;
   }
 
   //get random number from 0 to end
@@ -106,40 +128,52 @@ class Slide extends Component {
       let curSt = inp[j]
       let possibleMoves = this.getPossibleMoves(curSt)
       // TODO: change the below line
-      let res = "1,2,3,4,5,6,7,8,0"
       for (let i=0; i<possibleMoves.length; i++) {
         let curMov = possibleMoves[i]
         let nxt = this.swap(curSt, curMov)
         if (this.cache[nxt.join()]) {
           continue
         }
+        // To reduce the already visited combinations
         this.cache[nxt.join()] = true
         nxtSeq.push(nxt)
+        // For tracing the path for the solution
+        // DFS doesn't require this. But BFS you can't back track.
         this.temp[nxt.join()] = curSt.join()
-        if (nxt.join() === res) {
-          window.tmp = this.temp
-          return this.getPath(this.temp, this.state.inp)
+        // Checking whether the current combination is the solution.
+        if (nxt.join() === this.res) {
+          return this.getPath(this.temp, this.state.inp, nxt.join())
         }
       }
     }
     return this.solve(nxtSeq)
   }
 
-  // Trace the path of the slide
-  getPath(pathMap, start) {
-    let solvedPath = []
-    solvedPath.push("1,2,3,4,5,6,7,8,0")
-    while(solvedPath[solvedPath.length-1] !== start.join()) {
+  // Trace the path of the slide from last to first, solution to question
+  getPath(pathMap, start, finalState) {
+    let solvedPath = [finalState]
+    let startStr = start.join()
+    while(solvedPath[solvedPath.length-1] !== startStr) {
       let nxt = solvedPath[solvedPath.length-1]
       solvedPath.push(pathMap[nxt])
     }
-    console.log(this.getPathIndex(solvedPath))
-    return this.getPathIndex(solvedPath);
+    let pathArr = this.getPathIndex(solvedPath);
+    // Removing the lasy unwanted 0
+    pathArr.pop()
+    // Since we are finding the path from solution to question, this reverse is necessary
+    return pathArr.reverse()
   }
 
   getPathIndex(solvedPath) {
-    return solvedPath.map((i) => {
-      return i.split(",").indexOf("0")
+    return solvedPath.map((val, index, arr) => {
+      // Getting the actual value of the cell. By comparing the successive array.
+      // Since all the buttons are id with the actual value, it will be easy to do the solve animation
+      let zeroIndex = val.split(",").indexOf("0")
+      if (index+1 < arr.length) {
+        let clickedCell = arr[index+1].split(",")[zeroIndex]
+        return clickedCell;
+      }
+      return 0
     })
   }
 
@@ -194,6 +228,21 @@ class Slide extends Component {
     this.setState(tempState)
   }
 
+  // Clicking the each cell by id for animating the grid
+  animate(solutionArr) {
+    // Setting the solution text
+    this.setState({solution: solutionArr.join()})
+    var i = 0;
+    let interval = setInterval(function () {
+      let clicked = document.querySelector("[id='"+solutionArr[i]+"']")
+      this.slide({target: clicked})
+      i = i+1;
+      if (i === solutionArr.length) {
+        clearInterval(interval)
+      }
+    }.bind(this), 500)
+  }
+
   renderGrids(width, height, state) {
     let buttons = []
     for (let x=0; x<width; x++) {
@@ -202,7 +251,7 @@ class Slide extends Component {
         buttons.push(<button
           id={this.input[index]}
           className={styles.button}
-          ref={this.input[index] == 0 ? this.emptyCell : null}
+          ref={this.input[index] === 0 ? this.emptyCell : null}
           onClick={this.slide}>{this.input[index]}</button>)
       }
       buttons.push(<br></br>)
@@ -212,13 +261,13 @@ class Slide extends Component {
     return buttons
   }
 
-  changeWidth(inp) {
-    this.setState({width: parseInt(inp.target.value)})
-  }
-
-  changeHeight(inp) {
-    this.setState({height: parseInt(inp.target.value)})
-  }
+  // changeWidth(inp) {
+  //   this.setState({width: parseInt(inp.target.value)})
+  // }
+  //
+  // changeHeight(inp) {
+  //   this.setState({height: parseInt(inp.target.value)})
+  // }
 
   updateSeq(inp) {
     this.setState({gridSeq: inp.target.value})
@@ -227,7 +276,7 @@ class Slide extends Component {
   renderInfo() {
     return (
       <div>
-        <label> Width :
+        {/*<label> Width :
           <select onChange={this.changeWidth} value={this.state.width}>
             <option value="3">3</option>
             <option value="4">4</option>
@@ -240,7 +289,7 @@ class Slide extends Component {
             <option value="4">4</option>
             <option value="5">5</option>
           </select>
-        </label>
+        </label>*/}
         <br></br>
         Grid Sequence : <input type="text" onChange={this.updateSeq} value={this.state.gridSeq} placeholder="Comma seperated input" />
         <br></br>
@@ -258,7 +307,8 @@ class Slide extends Component {
         <div className={styles.buttonContainer}>
           {this.renderGrids(this.width, this.height, this.state)}
         </div>
-        <input type="button" value="Solve" onClick = {() => console.log(this.solve([this.state.inp]))} />
+        <input type="button" className={styles.solveButton} value="Solve" onClick = {() => this.animate(this.solve([this.state.inp]))} />
+        <p className={styles.solveButton}>{this.state.solution}</p>
       </div>
     )
   }
