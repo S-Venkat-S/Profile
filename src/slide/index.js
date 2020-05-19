@@ -14,6 +14,7 @@ class Slide extends Component {
     this.solve = this.solve.bind(this)
     // Using this for tracing the path for the solution
     this.temp = []
+    this.defaultInput = [7,2,1,8,5,4,3,6,0]
     this.res = "1,2,3,4,5,6,7,8,0"
     let state = this.init(false)
     this.state = state
@@ -22,7 +23,7 @@ class Slide extends Component {
   // Trying to use init method for resetting the game
   init(buttonClick) {
     let state = {
-      inp: [7,2,1,8,5,4,3,6,0],
+      inp: this.defaultInput,
       width: 3,
       height: 3,
       gridSeq: "",
@@ -52,14 +53,20 @@ class Slide extends Component {
     if (!inp) {
       return this.generateSeq(width, height)
     }
-    inp = inp.split(", ")
+    inp = inp.split(",")
     inp = inp.filter((value, index) => {
       return inp.indexOf(value) === index
     })
-    if (inp.length !== width*height) {
+    if (inp.length !== (width*height) - 1) {
       alert("Invalid input sequence")
-      return []
+      return this.defaultInput;
     }
+    if (!this.checkInversions(inp)) {
+      alert("The input sequence can't be solved")
+      return this.defaultInput
+    }
+    // Pushing the zero, because the user input doesn't include zero at the end.
+    inp.push(0)
     return inp.map((value) => {
       return parseInt(value)
     })
@@ -82,7 +89,6 @@ class Slide extends Component {
       }
       inversions = inversions + invStart
     }
-    console.log(inversions)
     if (inversions % 2 === 0) {
       return true;
     }
@@ -104,7 +110,6 @@ class Slide extends Component {
       while (seqArr.length !== (width*height)-1) {
         let randInt = this.getRandInt(mainArr.length)
         seqArr.push(mainArr[randInt])
-        console.log(seqArr, randInt, mainArr)
         // Removing the already placed value in the array
         let beforeArr = mainArr.splice(randInt+1)
         mainArr.pop()
@@ -244,6 +249,7 @@ class Slide extends Component {
   }
 
   renderGrids(width, height, state) {
+    // https://i.picsum.photos/id/1000/300/300.jpg
     let buttons = []
     for (let x=0; x<width; x++) {
       for (let y=0; y<height; y++) {
@@ -292,6 +298,8 @@ class Slide extends Component {
         </label>*/}
         <br></br>
         Grid Sequence : <input type="text" onChange={this.updateSeq} value={this.state.gridSeq} placeholder="Comma seperated input" />
+        <br></br>
+        <i>* Don't include zero (0) in the sequence</i>
         <br></br>
         <input type="button" value="New Game" onClick={() => this.init(true)} />
       </div>

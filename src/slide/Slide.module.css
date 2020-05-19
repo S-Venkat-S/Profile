@@ -15,6 +15,9 @@
   position: relative;
   left: 0px;
   top: 0px;
+  background-image: url("https://loremflickr.com/300/300/flower");
+  background-repeat: no-repeat;
+  color: transparent;
 }
 .button::after {
   content: attr(id);
@@ -22,19 +25,43 @@
   left: 90%;
   bottom: 85%;
   font-size: 12px;
+  color: white;
 }
 .buttonContainer {
   position: initial;
   margin: 0 auto;
 }
-
 .solveButton {
   width: 300px;
   height: 40px;
   margin: 0 auto;
 }
-
 .infoContainer {
   position: initial;
   margin: 0 auto;
+}
+/*This can be generated via code. But i am laze :)*/
+.button[id='1'] {
+  background-position: 0px 0px;
+}
+.button[id='2'] {
+  background-position: -100px 0px;
+}
+.button[id='3'] {
+  background-position: -200px 0px;
+}
+.button[id='4'] {
+  background-position: 0px -100px;
+}
+.button[id='5'] {
+  background-position: -100px -100px;
+}
+.button[id='6'] {
+  background-position: -200px -100px;
+}
+.button[id='7'] {
+  background-position: 0px -200px;
+}
+.button[id='8'] {
+  background-position: -100px -200px;
 }
