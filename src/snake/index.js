@@ -9,14 +9,19 @@ class Snake extends Component {
     this.touchstart = this.touchstart.bind(this)
     this.touchmove = this.touchmove.bind(this)
     this.keypress = this.keypress.bind(this)
-    let state = this.init()
-    this.state = state
+    this.offsetX = 0
+    this.offsetY = 0
     this.tStart = []
     this.tMove = []
     this.canvas = React.createRef()
     this.ctx = null
-    this.snakeLastDirection = "L"
+    this.snakeLastDirection = "R"
     this.snake = []
+    this.foodPosition = null
+    this.snakeInitialLength = 3
+    // Representation of the grid width and height i.e. 10x10
+    this.cellWidth = 0
+    this.cellHeight = 0
     this.colors = {
       border : "rgb(214, 216, 225)",
       cell1 : "rgb(30, 40, 54)",
@@ -24,7 +29,7 @@ class Snake extends Component {
       snake : "rgb(45, 139, 211)",
       food : "rgb(228, 63, 50)"
     }
-    this.fps = 10
+    this.fps = 5
     // Size of the single cell
     this.cellSize = 30
     // Configuring the keyboard keys for their corresponding directions
@@ -38,12 +43,17 @@ class Snake extends Component {
       65 : "L", //A
       68 : "R", //D
     }
+    this.state = this.init()
   }
 
   init() {
     let state = {}
-    this.height = window.screen.availHeight
-    this.width = window.screen.availWidth
+    // innerHeight and innerWidth is the exact viewport size of the client screen
+    // availHeight and availWidth returns the total screen width and height
+    this.height = window.innerHeight
+    this.width = window.innerWidth
+    this.cellWidth = parseInt(this.width / this.cellSize)
+    this.cellHeight = parseInt(this.height / this.cellSize)
     return state;
   }
 
@@ -59,9 +69,8 @@ class Snake extends Component {
     this.drawBorder()
     this.drawBackground()
     this.snake = this.initSnakePosition()
-    this.drawSnake()
+    this.placeFood()
     this.update()
-    console.log(this.ctx);
   }
 
   // Initializing the snake position in conter of vertical and horizontal with a size of 3
@@ -70,7 +79,20 @@ class Snake extends Component {
     let totalHeight = parseInt(this.height / this.cellSize)
     let middleWidth = parseInt(totalWidth/2)
     let middleHeight = parseInt(totalHeight/2)
-    return [[middleWidth-1, middleHeight], [middleWidth, middleHeight], [middleWidth+1, middleHeight]]
+    let start = parseInt(this.snakeInitialLength/2) * -1
+    // If the length of the snake is odd, we start less 1
+    if (parseInt(this.snakeInitialLength%2) === 1) {
+      start = start - 1;
+    }
+    let snakeInitialPositions = []
+    for (let i=start; i<parseInt(this.snakeInitialLength/2); i++) {
+      snakeInitialPositions.push([middleWidth+i, middleHeight])
+    }
+    return snakeInitialPositions;
+  }
+
+  placeFood() {
+
   }
 
   drawSnake() {
@@ -94,7 +116,16 @@ class Snake extends Component {
   // Moving the snake based on the this.snakeLastDirection.
   move() {
     let snakeHead = this.snake[this.snake.length-1]
-    let snakeFutureHead = [snakeHead[0]+1, snakeHead[1]]
+    let snakeFutureHead = this.moveSnakeHead(snakeHead[0], snakeHead[1])
+    // TODO: Fix the snake crash going out of the box
+    if (!this.isValidMove(snakeFutureHead[0], snakeFutureHead[1])) {
+      console.log("Snake crashed into the fence...");
+      return false;
+    }
+    if (this.isSnakeBiteTail(snakeFutureHead[0], snakeFutureHead[1])) {
+      console.log("Snake bites its own tail");
+      return false;
+    }
     // Reversing the snake to remove its tail
     this.snake.reverse()
     let removedCell = this.snake.pop()
@@ -103,6 +134,43 @@ class Snake extends Component {
     this.snake.reverse()
     // Adding the future head of the snake to the list
     this.snake.push(snakeFutureHead)
+  }
+
+  // Checking whether the sanke bite is own tail
+  isSnakeBiteTail(x, y)  {
+    for (let i=0; i<this.snake.length; i++) {
+      let curPos = this.snake[i]
+      if (curPos[0] === x && curPos[1] === y) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Validating the snake's head position. To check whether its out of the box, or bite's its own tail
+  isValidMove(x, y) {
+    // The snake is crashed in to the wall
+    if (x < 0 || x >= this.cellWidth || y < 0 || y >= this.cellHeight) {
+      return false
+    }
+    return true
+  }
+
+  // Moving the sanke's head based on the this.snakeLastDirection
+  // Below code can be simplified, but this is more readable
+  moveSnakeHead(x, y) {
+    if (this.snakeLastDirection === "D") {
+      return [x, y+1]
+    }
+    else if (this.snakeLastDirection === "U") {
+      return [x, y-1]
+    }
+    else if (this.snakeLastDirection === "L") {
+      return [x-1, y]
+    }
+    else if (this.snakeLastDirection === "R") {
+      return [x+1, y]
+    }
   }
 
   // Redrawing the background
@@ -141,18 +209,14 @@ class Snake extends Component {
 
   // Drawing the entire background of the board.
   drawBackground() {
-    let totalWidth = parseInt(this.width / this.cellSize)
-    let totalHeight = parseInt(this.height / this.cellSize)
-    this.cellWidth = totalWidth
-    this.cellHeight = totalHeight
     let colors = [this.colors.cell1, this.colors.cell2]
-    // return
-    for (let w=0; w<totalWidth; w++) {
-      for (let h=0; h<totalHeight; h++) {
-        this.drawPixel(this.offsetX+(w*this.cellSize), this.offsetY+h*this.cellSize, this.cellSize, this.cellSize, colors[(w*totalWidth+h)%2])
+    console.log(this.cellWidth);
+    for (let w=0; w<this.cellWidth; w++) {
+      for (let h=0; h<this.cellHeight; h++) {
+        this.drawPixel(this.offsetX+(w*this.cellSize), this.offsetY+h*this.cellSize, this.cellSize, this.cellSize, colors[(w*this.cellWidth+h)%2])
       }
       // For designing the checkered board effect
-      if (totalWidth%2 === 0) {
+      if (this.cellWidth%2 === 0) {
         let temp = colors[1]
         colors[1] = colors[0]
         colors[0] = temp
@@ -167,14 +231,28 @@ class Snake extends Component {
   }
 
   keypress(evnt) {
-    console.log(this.keyCode[evnt.keyCode])
+    this.changeLastDirection(this.keyCode[evnt.keyCode])
   }
 
-  // Calculating the draging direction.
+  changeLastDirection(direction) {
+    // Restriction for moving the snake
+    // If the snake is already moving the left, you cant move it to right
+    // If the snake is already moving the up, you cant move it to down
+    let oppositeDirections = [["U", "D"], ["L", "R"]]
+    for (let i=0; i<oppositeDirections.length; i++) {
+      if (oppositeDirections[i].indexOf(direction) >= 0 && oppositeDirections[i].indexOf(this.snakeLastDirection) === -1) {
+        this.snakeLastDirection = direction
+        return
+      }
+    }
+    return
+  }
+
   touchend() {
-    console.log(this.getScrollDirection())
+    this.changeLastDirection(this.getScrollDirection())
   }
 
+  // Calculating the sliding direction.
   getScrollDirection() {
     let xDiff = this.tStart[0] - this.tMove[0]
     let yDiff = this.tStart[1] - this.tMove[1]
