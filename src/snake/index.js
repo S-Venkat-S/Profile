@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-// import styles from "./Snake.module.css"
+import styles from "./Snake.module.css"
 
 class Snake extends Component {
 
@@ -9,6 +9,7 @@ class Snake extends Component {
     this.touchstart = this.touchstart.bind(this)
     this.touchmove = this.touchmove.bind(this)
     this.keypress = this.keypress.bind(this)
+    this.update = this.update.bind(this)
     this.offsetX = 0
     this.offsetY = 0
     this.tStart = []
@@ -17,8 +18,9 @@ class Snake extends Component {
     this.ctx = null
     this.snakeLastDirection = "R"
     this.snake = []
-    this.foodPosition = null
+    this.foodPosition = []
     this.snakeInitialLength = 3
+    this.interval = null
     // Representation of the grid width and height i.e. 10x10
     this.cellWidth = 0
     this.cellHeight = 0
@@ -29,7 +31,7 @@ class Snake extends Component {
       snake : "rgb(45, 139, 211)",
       food : "rgb(228, 63, 50)"
     }
-    this.fps = 5
+    this.fps = 7
     // Size of the single cell
     this.cellSize = 30
     // Configuring the keyboard keys for their corresponding directions
@@ -47,7 +49,7 @@ class Snake extends Component {
   }
 
   init() {
-    let state = {}
+    let state = {status : null}
     // innerHeight and innerWidth is the exact viewport size of the client screen
     // availHeight and availWidth returns the total screen width and height
     this.height = window.innerHeight
@@ -57,7 +59,7 @@ class Snake extends Component {
     return state;
   }
 
-  componentDidMount() {
+  componentDidMount()   {
     window.addEventListener('touchend', this.touchend);
     window.addEventListener('touchstart', this.touchstart);
     window.addEventListener('touchmove', this.touchmove);
@@ -70,7 +72,8 @@ class Snake extends Component {
     this.drawBackground()
     this.snake = this.initSnakePosition()
     this.placeFood()
-    this.update()
+    this.drawSnake()
+    // this.update()
   }
 
   // Initializing the snake position in conter of vertical and horizontal with a size of 3
@@ -92,7 +95,23 @@ class Snake extends Component {
   }
 
   placeFood() {
+    let x = this.getRandom(this.cellWidth)
+    let y = this.getRandom(this.cellHeight)
+    // Checking whether the food is placed on top of the snake or not
+    let isFoodPlacedInsideSnake = this.snake.join("|").indexOf(x+","+y) !== -1
+    let isFoodPlacedInOldFood = this.foodPosition[0] === x && this.foodPosition[1] === y
+    while(isFoodPlacedInsideSnake || isFoodPlacedInOldFood) {
+      x = this.getRandom(this.cellWidth)
+      y = this.getRandom(this.cellHeight)
+      isFoodPlacedInsideSnake = this.snake.join("|").indexOf(x+","+y) !== -1
+      isFoodPlacedInOldFood = this.foodPosition[0] === x && this.foodPosition[1] === y
+    }
+    this.foodPosition = [x, y]
+    this.drawPixel(this.offsetX + (x*this.cellSize), this.offsetY + (y*this.cellSize), this.cellSize, this.cellSize, this.colors.food)
+  }
 
+  getRandom(max) {
+    return parseInt(Math.random()*max)
   }
 
   drawSnake() {
@@ -104,8 +123,10 @@ class Snake extends Component {
     }
   }
 
-  update() {
-    setInterval(this.gameloop.bind(this), 1000/this.fps)
+  update(evnt) {
+    console.log(evnt.currentTarget);
+    evnt.currentTarget.style.display = "none"
+    this.interval = setInterval(this.gameloop.bind(this), 1000/this.fps)
   }
 
   gameloop() {
@@ -119,21 +140,37 @@ class Snake extends Component {
     let snakeFutureHead = this.moveSnakeHead(snakeHead[0], snakeHead[1])
     // TODO: Fix the snake crash going out of the box
     if (!this.isValidMove(snakeFutureHead[0], snakeFutureHead[1])) {
-      console.log("Snake crashed into the fence...");
+      this.resetGame("Snake crashed into the fence.");
       return false;
     }
     if (this.isSnakeBiteTail(snakeFutureHead[0], snakeFutureHead[1])) {
-      console.log("Snake bites its own tail");
+      this.resetGame("Snake bites its own tail.");
       return false;
     }
-    // Reversing the snake to remove its tail
-    this.snake.reverse()
-    let removedCell = this.snake.pop()
-    this.redrawBackground(removedCell)
-    // Reversing the snake back to its normal position
-    this.snake.reverse()
+    // If snake eat food, it grows. Hence no need to delete the tail
+    if (!this.isSankeAteFood(snakeFutureHead[0], snakeFutureHead[1])) {
+      // Reversing the snake to remove its tail
+      this.snake.reverse()
+      let removedCell = this.snake.pop()
+      this.redrawBackground(removedCell)
+      // Reversing the snake back to its normal position
+      this.snake.reverse()
+    }
+    else {
+      this.placeFood()
+    }
     // Adding the future head of the snake to the list
     this.snake.push(snakeFutureHead)
+  }
+
+  resetGame(status) {
+    this.setState({status});
+    clearInterval(this.interval)
+    setTimeout(window.location.reload.bind(window.location), 700)
+  }
+
+  isSankeAteFood(x, y) {
+    return this.foodPosition[0] === x && this.foodPosition[1] === y;
   }
 
   // Checking whether the sanke bite is own tail
@@ -248,7 +285,8 @@ class Snake extends Component {
     return
   }
 
-  touchend() {
+  touchend(evnt) {
+    evnt.preventDefault()
     this.changeLastDirection(this.getScrollDirection())
   }
 
@@ -285,17 +323,33 @@ class Snake extends Component {
   }
 
   touchstart(evnt) {
+    evnt.preventDefault()
     this.tStart = [evnt.targetTouches[0].pageX, evnt.targetTouches[0].pageY]
   }
 
   touchmove(evnt) {
-    // console.log(evnt)
+    evnt.preventDefault()
     this.tMove = [evnt.targetTouches[0].pageX, evnt.targetTouches[0].pageY]
   }
 
   render() {
     return (
-      <canvas ref={this.canvas} width={this.width} height={this.height}></canvas>
+      <div>
+        <canvas className={styles.canvas} ref={this.canvas} width={this.width} height={this.height}></canvas>
+        <div onTouchStart={this.update} onClick={this.update} className={styles.popup}>
+          <h2>Touch / Click to start</h2>
+          <ol>
+            <li><h4> PC Controls : </h4></li>
+              <li><pre>     W, A, S, D</pre></li>
+              <li><pre>     &#8593;, &#8592;, &#8595;, &#8594;</pre></li>
+            <li><h4>Mobile Controls : </h4></li>
+              <li><pre>     Slide into the direction.</pre></li>
+          </ol>
+        </div>
+        <div className={this.state.status !== null ? styles.notify : null}>
+          <span>{this.state.status}</span>
+        </div>
+      </div>
     )
   }
 }

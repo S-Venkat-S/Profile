@@ -1,0 +1,39 @@
+.canvas {
+  position: absolute;
+}
+.popup {
+  min-width: 100%;
+  min-height: 100%;
+  background-color: transparent;
+  color: white;
+  clear: both;
+  position: absolute;
+  text-align: center;
+}
+.popup ol {
+  list-style: none;
+  text-align: left;
+}
+.popup pre {
+  font-size: 15px;
+}
+.notify {
+  min-width: 100%;
+  min-height: 100%;
+  background-color: #00000096;
+  color: white;
+  clear: both;
+  position: absolute;
+  text-align: center;
+  display: grid;
+}
+
+.notify span  {
+  background-color: #e43f32;
+  vertical-align: middle;
+  text-align: center;
+  position: initial;
+  margin: auto;
+  padding: 10px;
+  border-radius: 5px;
+}
