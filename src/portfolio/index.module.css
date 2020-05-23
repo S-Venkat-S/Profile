@@ -1,0 +1,39 @@
+.container {
+  background-color: #0b132b;
+  color: #6fffe9;
+  width: 100%;
+  height: 100%;
+  clear: both;
+  position: absolute;
+  font-style: 'Roboto';
+}
+
+.nav {
+  width: 100%;
+  background-color: #3A506B;
+  display: flex;
+}
+
+.nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  align-self: center;
+}
+
+.nav li {
+  cursor: pointer;
+  font-size: 1.2rem;
+  margin: 0 auto;
+  display: table-cell;
+  padding: 0.5em 1.2em;
+}
+
+.nav li[data-selected='true'] {
+  border-bottom: solid 4px;
+}
+
+.nav a {
+  text-decoration: none;
+  color: inherit;
+}

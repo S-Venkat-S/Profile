@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
 import Sudoku from "./sudoku/index.js"
 import Knightstour from "./knightstour/index.js"
 import Slide from "./slide/index.js"
 import Snake from "./snake/index.js"
+import Portfolio from "./portfolio/index.js"
 import * as serviceWorker from './serviceWorker';
 
 const path = window.location.pathname
@@ -23,7 +23,7 @@ else if(path === "/Snake") {
   Page = Snake
 }
 else {
-  Page = App
+  Page = Portfolio
 }
 
 ReactDOM.render(
