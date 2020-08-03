@@ -9,10 +9,10 @@ class About extends Component {
 
   render() {
     return (
-      <div>
-        <h3>Hello, I am Venkatesh</h3>
-        <h2>I am a Software Developer having good experience in both the Client and Server side.</h2>
-        <p></p>
+      <div className={styles.container} >
+        <p className={styles.name}>Hello, I'm Venkatesh.</p>
+        <p className={styles.about}>Software developer in frontend and backend web apps and hybrid mobile apps.</p>
+        <p className={styles.skills}>Check out my Skills and Works.</p>
       </div>
     )
   }

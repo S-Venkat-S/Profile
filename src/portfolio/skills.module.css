@@ -1,0 +1,32 @@
+.container {
+  width: 100%;
+  display: flex;
+}
+
+.column {
+  margin: 0 auto;
+  width: 40%;
+  min-width: 300px;
+}
+
+.column > span {
+  font-size: 1.6rem;
+}
+
+.skillContainer {
+  text-align: left;
+  font-size: 1.2rem;
+  padding: 0.6em 0.7em;
+}
+
+.skillProgress {
+  height: 0.8em;
+  width: 100%;
+  background-color: beige;
+  margin-top: 0.3em;
+}
+
+.skillBar {
+  height: inherit;
+  background-color: red;
+}

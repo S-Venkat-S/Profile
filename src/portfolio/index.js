@@ -16,7 +16,7 @@ class Portfolio extends Component {
       2 : <Works />,
       3 : <Hire />,
     }
-    this.state = {selected : 0}
+    this.state = {selected : 2}
   }
 
   changeSubTab(id) {
@@ -43,7 +43,7 @@ class Portfolio extends Component {
         @import url('https://fonts.googleapis.com/css2?family=Roboto');
       </style>
         {this.renderNav()}
-      <div>
+      <div className={styles.content} >
         {this.pages[this.state.selected]}
       </div>
       </div>

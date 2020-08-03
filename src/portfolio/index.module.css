@@ -5,7 +5,7 @@
   height: 100%;
   clear: both;
   position: absolute;
-  font-style: 'Roboto';
+  font-family: 'Roboto';
 }
 
 .nav {
@@ -36,4 +36,11 @@
 .nav a {
   text-decoration: none;
   color: inherit;
+}
+
+.content {
+  padding: 1em 1em;
+  display: flex;
+  overflow-y: scroll;
+  height: 80%;
 }
